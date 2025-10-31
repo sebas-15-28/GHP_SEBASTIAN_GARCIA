@@ -75,3 +75,121 @@ Esfuerzo: 20
 Prioridad: Could
 # Diagrama de clases
 ![diagrama de clases](imagenes/diagrama_clases.png)
+# Diagramas de flujo
+![Diagrama de flujo]imagen
+# Dispensador
+El dispensador es llenado manualmente y este muestra cuanta cantidad de cereal hay si esta lleno, medio o vacio. Este funciona con un boton o aplicacion.
+# Entradas
+C:cereal(1 si el dispensador esta en la midad o mas de cereal, 0 si esta por debajo de la midad) , B:boton(1 si se activa dispensa la porcion de cereal, 0 si no se activa el boton)
+# Salidas
+M:motor(1 se mueve y da la porcion de cereal, 0 no da la porcion de cereal) , L:led(1 indica si el dispensador esta por de bajo de la midad de cereal, 0 si esta por encima de la mitad)
+# Casos de uso
+# 1. Identificar actores 
+-Niño/Cliente
+ *Interactúa directamente con el dispensador 
+ *Acciones: Oprime el botón para recibir su porción
+-Padre/ Terapeuta
+ *Interactúa de forma indirecta
+ *Acciones: supervisa cuantas porcione ha recibido el niño/cliente y se encarga de abastecer el dispensador 
+-Sistema de control del dispensador 
+ *Encargado de gestionar el motor, el contador de porciones y el sensor de cereal 
+ *Acciones: Válida si hay cereal, activa el motor, actualiza el contador de las porciones, genera mensajes de error 
+# 2. Casos de uso
+Dispensar porción de cereal
+-Actor principal: Niño (usuario)
+ *Objetivo: Obtener una porción de cereal de manera sencilla y segura.
+
+-Flujo básico:
+ *El niño coloca el recipiente en la base.
+ *El niño presiona el botón.
+ *El sistema verifica que haya cereal disponible.
+ *El sistema libera la porción configurada.
+ *El sistema muestra el peso y actualiza el contador.
+ 
+ -Flujos alternativos:
+ *Si no hay recipiente → el sistema bloquea la salida.
+ *Si el contenedor está vacío → el sistema notifica al usuario.
+
+Consultar contador de porciones 
+-Actor principal: Padre/ Terapeuta 
+ *Objetivo:Consultar el historial de consumo y el número de porciones servidas
+
+-Flujo básico
+ *El actor accede al sistema (pantalla o app externa) 
+ *El sistema muestra el número de porciones consumidas y el registro histórico (fecha, hora, peso)
+
+-Flujos alternativos
+ *Si no hay registros → el sistema muestra contador en cero.
+
+Manejar errores del sistema
+-Actor principal: Sistema
+ *Objetivo: Detectar y notificar fallas para mantener la seguridad y el buen funcionamiento.
+-Flujo básico:
+ *El sistema monitorea constantemente sensores y motor
+ *Si detecta un error (atasco, vacío, sensor defectuoso):
+  +Muestra un mensaje en pantalla o indicador visual.
+  +Emite alerta sonora (si aplica).
+  +Detiene el proceso hasta que se corrija la falla.
+
+# 3. Diagrama de casos de uso
+imagen
+
+# 4. Narrativa de casos de uso
+-Flujo básico:
+ *El niño coloca un recipiente en la base del dispensador 
+ *El niño presiona el botón para activar el dispensador
+ *El sistema verifica que hay cereal en el contenedor 
+ *El sistema libera la porción de cereal configurada
+ *El sistema muestra el peso dispensado y el contador de porciones
+ *El sistema guarda el registro de consumo con fecha, hora y peso
+
+-Flujo alternativo:
+ *Recipiente no detectado: el sistema bloquea la salida y alerta al usuario.
+ *Contenedor vacío o bajo nivel: el sistema emite una notificación manual / sonora.
+ *Error en sensores: el sistema muestra un error y detiene el dispensador.
+ *Atasco en motor: el sistema cancela la acción y da una noticia de la falla.
+
+-Relación con las historias de usuario:
+ *H-1: Detección de recipiente
+ *H-2 : Estimación de peso en tiempo real
+ *H-3 : Dosificación automática
+ *H-4 : visualización en la pantalla 
+ *H-5 : Notificación de bajo nivel de cereal 
+ *H-6 : Registro histórico de consumo 
+ *H-7 : Configuración de porciones 
+ *H-8 : Prueba de sensores de peso
+ *H-9 : Reporte de fallas en sensores
+ *H-10 : Control remoto por app( externa ) 
+
+# 5. Requisitos no funcionales
+-Seguridad  
+ *El sistema debe ser seguro para niños, evitando piezas pequeñas o bordes cortantes que puedan representar un peligro.
+ *El dispensador no debe liberar cereal si no detecta un recipiente en la base, evitando desperdicio o accidentes (H-1).
+ *En caso de atasco en el motor o fallas en los sensores, el sistema debe detenerse automáticamente y mostrar una alerta al usuario (H-9).
+
+-Usabilidad
+ *El botón de activación debe ser grande, visible y fácil de presionar, de manera que pueda ser utilizado por niños sin dificultad.
+ *La pantalla o indicador visual debe mostrar claramente el peso dispensado y el número de porciones en tiempo real (H-2, H-4).
+ *La interacción con el dispensador debe ser intuitiva, de forma que el usuario pueda utilizarlo sin necesidad de leer instrucciones complejas.
+
+-Accesibilidad
+ *El sistema debe contar con señales visuales y, de ser posible, sonoras para notificar estados importantes como: bajo nivel de cereal, recipiente no detectado o error en  los sensores (H-5, H-9).
+ *La información mostrada en pantalla debe tener un tamaño y contraste adecuados para ser entendida fácilmente por niños y adultos.
+
+-Fiabilidad
+ *Cada pulsación del botón debe corresponder a una única porción de cereal, respetando la configuración establecida por el usuario (H-3, H-7).
+ *El registro de consumo debe guardarse de manera confiable con la fecha, hora y peso correspondiente, asegurando la trazabilidad del uso (H-6).
+
+# 6. Hidtorias de usuario
+-Dispensador de cereal
+ *Cómo niño quiero presionar un botón para recibir una porción de cereal para poder servirme fácilmente sin ayuda 
+-Contador de porciones 
+ *Cómo padre quiero que el dispensador muestre cuántas porciones se han servido, para poder controlar el consumo del niño
+-Detección de recipiente 
+*Cómo niño quiero que el sistema detecte si hay un recipiente antes de dispensar, para evitar que los cereales caigan al suelo
+-Control de porción automática
+ *Cómo niño quiero que el dispensador entregue siempre la misma cantidad de cereal para no recibir de más o menos cereal
+-Notificación de contenedor vacío 
+ *Cómo padre quiero que el dispensador me avise cuando se esté acabando el cereal para poder llenarlo a tiempo
+-Historial de consumo
+ *Cómo padre quiero consultar el historial de porciones consumidas para ver la cantidad de veces que como el niño.
