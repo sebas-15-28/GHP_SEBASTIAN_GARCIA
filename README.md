@@ -4,8 +4,11 @@ Este es un proyecto de la materia de metodologia de desarrollo de sofware, este 
 Diseñar un sistema automatizado sobre un dispensador de ceral atravez de un boton o aplicion, tambien mostrara la cantidad de cereal en el dispensador. Asi haciendolo mas facil para niños.
 # Integrantes
 -Sebastian Garcia Marquez - 2478452
+
 -Angel Daniel Ipujan - 2478540
+
 -Juan Jose Vinasco - 2478516
+
 -Juan David Mora - 2478520
 #Historias de usuario
 # H-1
