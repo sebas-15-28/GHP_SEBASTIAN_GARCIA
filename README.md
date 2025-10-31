@@ -73,3 +73,5 @@ una app móvil, para servir cereales y revisar consumos a distancia.
 Valor de negocio: 7 
 Esfuerzo: 20 
 Prioridad: Could
+# Diagrama de clases
+![diagrama de clases](imagenes/diagrama_clases.png)
