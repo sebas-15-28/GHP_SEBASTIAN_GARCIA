@@ -296,7 +296,7 @@ imagen
  
  *El registro de consumo debe guardarse de manera confiable con la fecha, hora y peso correspondiente, asegurando la trazabilidad del uso (H-6).
 
-# 6. Hidtorias de usuario
+# 6. Historias de usuario
 -Dispensador de cereal
 
  *Cómo niño quiero presionar un botón para recibir una porción de cereal para poder servirme fácilmente sin ayuda 
