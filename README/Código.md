@@ -1,140 +1,113 @@
-#include <WiFiS3.h>
-#include <WiFiUdp.h>
-#include <NTPClient.h>
 #include <Servo.h>
 
-// ======= CONFIGURACIONES =======
-const char* ssid     = "RED_WIFI";      
-const char* password = "CONTRASEÑA";    
+Servo servo;
 
-// Horarios de alimentación (por defecto)
-int horarios[][2] = {
-  {8,  0},   // 08:00
-  {14, 0},   // 14:00
-  {20, 0}    // 20:00
+// ----- Configuración de pines -----
+const int trigPlato = 8;
+const int echoPlato = 7;
+const int trigNivel = 6;
+const int echoNivel = 5;
+const int ledVacio = 13;
+
+// ----- Display 7 segmentos (ánodo común) -----
+const int a = A0;
+const int b = A1;
+const int c = A2;
+const int d = A3;
+const int e = A4;
+const int f = A5;
+const int g = 10;
+
+int porciones = 0;
+bool cerealVacio = false;
+
+// ----- Tabla de encendido (LOW = encendido, HIGH = apagado) -----
+bool numeros[10][7] = {
+  {0,0,0,0,0,0,1}, // 0
+  {1,0,0,1,1,1,1}, // 1
+  {0,0,1,0,0,1,0}, // 2
+  {0,0,0,0,1,1,0}, // 3
+  {1,0,0,1,1,0,0}, // 4
+  {0,1,0,0,1,0,0}, // 5
+  {0,1,0,0,0,0,0}, // 6
+  {0,0,0,1,1,1,1}, // 7
+  {0,0,0,0,0,0,0}, // 8
+  {0,0,0,1,1,0,0}  // 9
 };
-int totalHorarios = 3;
-
-// Tiempo que la compuerta permanece abierta (en segundos)
-const int tiempoAbierto = 10;
-
-// Servo
-const int pinServo = 9;
-const int posCerrado = 0;
-const int posAbierto  = 90;
-Servo servoAlimentador;
-
-// Control de hora
-WiFiUDP ntpUDP;
-NTPClient clienteTiempo(ntpUDP, "pool.ntp.org", -5 * 3600); 
-
-// Para evitar múltiples activaciones en el mismo minuto
-int ultimoMinutoActivado = -1;
-
-// Bluetooth
-#include <SoftwareSerial.h>
-SoftwareSerial BT(10, 11); // RX, TX del Arduino
 
 void setup() {
   Serial.begin(9600);
-  BT.begin(9600);
+  servo.attach(9);
 
-  // Conectar al WiFi
-  Serial.print("Conectando a WiFi: ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  pinMode(trigPlato, OUTPUT);
+  pinMode(echoPlato, INPUT);
+  pinMode(trigNivel, OUTPUT);
+  pinMode(echoNivel, INPUT);
+  pinMode(ledVacio, OUTPUT);
+
+  int pines[] = {a,b,c,d,e,f,g};
+  for (int i = 0; i < 7; i++) {
+    pinMode(pines[i], OUTPUT);
+    digitalWrite(pines[i], HIGH); // segmentos apagados (ánodo común)
   }
-  Serial.println("\n¡WiFi conectado!");
 
-  // Iniciar cliente NTP
-  clienteTiempo.begin();
+  servo.write(0);
+}
 
-  // Configurar el servo
-  servoAlimentador.attach(pinServo);
-  servoAlimentador.write(posCerrado);
-  Serial.println("Alimentador automático iniciado.");
+long medirDistancia(int trig, int echo) {
+  digitalWrite(trig, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trig, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+  long duracion = pulseIn(echo, HIGH);
+  return duracion * 0.034 / 2; // cm
 }
 
 void loop() {
-  clienteTiempo.update();
-  int hora = clienteTiempo.getHours();
-  int minuto = clienteTiempo.getMinutes();
+  long distPlato = medirDistancia(trigPlato, echoPlato);
+  long distNivel = medirDistancia(trigNivel, echoNivel);
 
-  // Verificar cada horario configurado
-  for (int i = 0; i < totalHorarios; i++) {
-    if (hora == horarios[i][0] && minuto == horarios[i][1]) {
-      if (minuto != ultimoMinutoActivado) {
-        liberarComida();
-        ultimoMinutoActivado = minuto;
-      }
-    }
+  // Si detecta plato y hay cereal
+  if (distPlato < 10 && !cerealVacio) {
+    servo.write(90);
+    delay(2000);
+    servo.write(0);
+    porciones++;
+    if (porciones > 9) porciones = 0;
+    mostrarNumero(porciones);
   }
 
-  // Revisar comandos por Bluetooth
-  recibirComandoBluetooth();
+  // Si el nivel de cereal es bajo
+  if (distNivel > 15) {
+    cerealVacio = true;
+    digitalWrite(ledVacio, HIGH);
+  }
 
-  delay(1000);
+  // Si se rellena el cereal
+  if (distNivel <= 15 && cerealVacio) {
+    cerealVacio = false;
+    digitalWrite(ledVacio, LOW);
+  }
+
+  delay(500);
 }
 
-// Función para abrir y cerrar la compuerta
-void liberarComida() {
-  Serial.println("Liberando comida...");
-  servoAlimentador.write(posAbierto);
-  delay(tiempoAbierto * 1000);
-  servoAlimentador.write(posCerrado);
-  Serial.println("Compuerta cerrada.");
-}
-
-// Función para recibir y procesar comandos Bluetooth
-void recibirComandoBluetooth() {
-  if (BT.available()) {
-    String comando = BT.readStringUntil('\n');
-    comando.trim(); // eliminar espacios al inicio y final
-
-    // Verificar formato H1=HH:MM
-    if (comando.startsWith("H")) {
-      int indice = comando.charAt(1) - '1'; // H1 -> 0, H2 -> 1, H3 -> 2
-      int posIgual = comando.indexOf('=');
-      int posDosPuntos = comando.indexOf(':');
-
-      if (indice >= 0 && indice < totalHorarios && posIgual > 0 && posDosPuntos > posIgual) {
-        int nuevaHora = comando.substring(posIgual + 1, posDosPuntos).toInt();
-        int nuevoMinuto = comando.substring(posDosPuntos + 1).toInt();
-
-        horarios[indice][0] = nuevaHora;
-        horarios[indice][1] = nuevoMinuto;
-
-        BT.println("Horario H" + String(indice + 1) + " actualizado a " +
-                   String(nuevaHora) + ":" + String(nuevoMinuto));
-        Serial.println("Horario H" + String(indice + 1) + " actualizado a " +
-                       String(nuevaHora) + ":" + String(nuevoMinuto));
-      }
-    }
+// ----- Mostrar número en display -----
+void mostrarNumero(int n) {
+  int pines[] = {a,b,c,d,e,f,g};
+  for (int i = 0; i < 7; i++) {
+    digitalWrite(pines[i], numeros[n][i]);
   }
 }
 
 
 este es el código para el funcionamiento del proyecto, se espera ajustar los horarios de las comidas cuando pongamos en practica el código y montemos el proyecto para probarlo en mejores condiciones.
 
-## funcionamiento
-1. El Arduino se conecta al WIFI para obtener la hora por NTP
-2. E modulo Bluetooth espera comandos desde el celular
-3. los horarios para cambiar los horarios se pondrán así: 
-H1=08:30
-H2=14:00
-H3=20:00
-4. El Arduino actualiza los horarios en la memoria
-5. cuando llega la hora, se activa el servo
+## funciones
+El código tiene dos sensores, uno sirve para detectar el plato para dar la porción del cereal y el otro sensor detecta el nivel del cereal y cuando se acaba activa un led el cual indica el nivel bajo del cereal. También hay in display de 7 segmentos que muestra la cantidad de porciones (de 0 a 9).
 
-## conexiones 
+## simulación
+- circuito: https://www.tinkercad.com/things/4GXwHZDkvFE-dispensador-de-cereal?sharecode=JMRZ1f2Z-Og5uwinxwL4u6sTYCUCAqICaz3o69RdyNk
 
-HC-06      Arduino UNO R4 WiFi
-VCC    →    5V
-GND   →    GND
-TX      →    Pin 10 (RX SoftwareSerial)
-RX      →    Pin 11 (TX SoftwareSerial) → con divisor de voltaje
-- 1kΩ entre TX de Arduino y RX HC-06
-- 2kΩ entre RX HC-06 y GND
+- modelo 3D: https://www.tinkercad.com/things/0IwALI6RvHm-terrific-uusam-rottis?sharecode=rdODFi4ct_GYfJd9VDQepKcM8vrAv0c641CD_v_9veI
